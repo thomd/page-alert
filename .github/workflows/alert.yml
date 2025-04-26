@@ -2,7 +2,7 @@ name: Daily HTML Fetch & RSS Update
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 1 * * *'  # Once daily
   workflow_dispatch:
 
 permissions:
@@ -21,35 +21,24 @@ jobs:
           mkdir -p fetched-pages
           curl -sL https://e5e9-2003-ff-6701-1f00-941e-3322-8bda-b0a2.ngrok-free.app > fetched-pages/page.html
 
-      - name: Check for changes
+      - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add fetched-pages/page.html
-          git diff --cached --quiet || echo "changed=true" >> $GITHUB_ENV
-
-      - name: Commit and push if changed
-        if: env.changed == 'true'
+      - name: Detect changes
+        id: detect_changes
         run: |
-          git commit -m "Update fetched HTML page"
-          git push
+          git add fetched-pages/page.html
+          git diff --cached --exit-code || echo "changed=true" >> $GITHUB_ENV
 
-      - name: Generate RSS item
+      - name: Generate and Update RSS
         if: env.changed == 'true'
         run: |
           LAST_COMMIT=$(git rev-parse HEAD)
+          COMMIT_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
           COMMIT_URL="https://github.com/${{ github.repository }}/commit/${LAST_COMMIT}"
-          echo "COMMIT_URL=$COMMIT_URL" >> $GITHUB_ENV
-          echo "COMMIT_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_ENV
 
-      - name: Generate RSS feed
-        if: env.changed == 'true'
-        uses: actions/checkout@v4
-
-      - name: Write new RSS item
-        if: env.changed == 'true'
-        run: |
           RSS_FILE="rss.xml"
           TITLE="HTML Page Updated"
           LINK="${COMMIT_URL}"
@@ -57,14 +46,19 @@ jobs:
 
           # Create RSS feed if it doesn't exist
           if [ ! -f "$RSS_FILE" ]; then
-            echo "<?xml version=\"1.0\"?><rss version=\"2.0\"><channel><title>HTML Page Updates</title><link>https://yourusername.github.io/yourrepo/rss.xml</link><description>Updates to tracked HTML page</description></channel></rss>" > "$RSS_FILE"
+            echo "<?xml version=\"1.0\"?><rss version=\"2.0\"><channel><title>HTML Page Updates</title><link>https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/rss.xml</link><description>Updates to tracked HTML page</description></channel></rss>" > "$RSS_FILE"
           fi
 
-          # Add new item above </channel>
+          # Insert new item into RSS feed
           ITEM="<item><title>${TITLE}</title><link>${LINK}</link><pubDate>${PUB_DATE}</pubDate></item>"
           sed -i "s|</channel>|${ITEM}</channel>|" "$RSS_FILE"
 
+          # Stage rss.xml too
           git add "$RSS_FILE"
-          git commit -m "Update RSS feed"
+
+      - name: Commit and Push changes
+        if: env.changed == 'true'
+        run: |
+          git commit -m "Update fetched HTML page and RSS feed"
           git push
 
