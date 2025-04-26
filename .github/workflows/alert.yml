@@ -2,7 +2,7 @@ name: Daily HTML Fetch & RSS Update
 
 on:
   schedule:
-    - cron: '6,16,26,36,46,56 * * * *'  # Once daily
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions:
