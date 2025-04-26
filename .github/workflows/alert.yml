@@ -2,7 +2,7 @@ name: Daily HTML Fetch & RSS Update
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '30 8 * * *'
   workflow_dispatch:
 
 permissions:
@@ -19,7 +19,7 @@ jobs:
       - name: Fetch HTML page
         run: |
           mkdir -p fetched-pages
-          curl -sL https://e5e9-2003-ff-6701-1f00-941e-3322-8bda-b0a2.ngrok-free.app > fetched-pages/page.html
+          curl -sL https://www.uni-goettingen.de/de/696100.html > fetched-pages/page.html
 
       - name: Configure Git
         run: |
