@@ -16,10 +16,19 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Fetch HTML page
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Fetch HTML pages
         run: |
           mkdir -p fetched-pages
-          curl -sL https://www.uni-goettingen.de/de/696100.html > fetched-pages/page.html
+          yq eval '.urls[] | [.name, .url] | @tsv' config.yml | while IFS=$'\t' read -r name url; do
+            filename=$(echo "$name" | tr ' ' '_' | tr '[:upper:]' '[:lower:]').html
+            echo "Fetching $name: $url"
+            curl -sL "$url" > "fetched-pages/$filename"
+          done
 
       - name: Configure Git
         run: |
@@ -29,8 +38,18 @@ jobs:
       - name: Detect changes
         id: detect_changes
         run: |
-          git add fetched-pages/page.html
-          git diff --cached --exit-code || echo "changed=true" >> $GITHUB_ENV
+          git add fetched-pages/
+          CHANGED_FILES=""
+          for file in fetched-pages/*.html; do
+            if ! git diff --cached --exit-code "$file" > /dev/null 2>&1; then
+              basename_file=$(basename "$file" .html)
+              CHANGED_FILES="$CHANGED_FILES $basename_file"
+            fi
+          done
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "changed=true" >> $GITHUB_ENV
+            echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
+          fi
 
       - name: Generate and Update RSS
         if: env.changed == 'true'
@@ -38,20 +57,25 @@ jobs:
           LAST_COMMIT=$(git rev-parse HEAD)
           COMMIT_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
           COMMIT_URL="https://github.com/${{ github.repository }}/commit/${LAST_COMMIT}"
-
           RSS_FILE="rss.xml"
-          TITLE="HTML Page Updated"
-          LINK="${COMMIT_URL}"
-          PUB_DATE="${COMMIT_DATE}"
 
           # Create RSS feed if it doesn't exist
           if [ ! -f "$RSS_FILE" ]; then
-            echo "<?xml version=\"1.0\"?><rss version=\"2.0\"><channel><title>HTML Page Updates</title><link>https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/rss.xml</link><description>Updates to tracked HTML page</description></channel></rss>" > "$RSS_FILE"
+            echo "<?xml version=\"1.0\"?><rss version=\"2.0\"><channel><title>HTML Page Updates</title><link>https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/rss.xml</link><description>Updates to tracked HTML pages</description></channel></rss>" > "$RSS_FILE"
           fi
 
-          # Insert new item into RSS feed
-          ITEM="<item><title>${TITLE}</title><link>${LINK}</link><pubDate>${PUB_DATE}</pubDate></item>"
-          sed -i "s|</channel>|${ITEM}</channel>|" "$RSS_FILE"
+          # Process each changed file
+          for changed_file in ${{ env.changed_files }}; do
+            # Find the corresponding page name from config
+            PAGE_NAME=$(yq eval ".urls[] | select(.name | test(\".*$(echo $changed_file | sed 's/_/ /g').*\"; \"i\")) | .name" config.yml | head -1)
+            if [ -z "$PAGE_NAME" ]; then
+              PAGE_NAME=$(echo "$changed_file" | sed 's/_/ /g' | sed 's/\b\w/\U&/g')
+            fi
+
+            TITLE="Page Updated: $PAGE_NAME"
+            ITEM="<item><title>${TITLE}</title><link>${COMMIT_URL}</link><pubDate>${COMMIT_DATE}</pubDate></item>"
+            sed -i "s|</channel>|${ITEM}</channel>|" "$RSS_FILE"
+          done
 
           # Stage rss.xml too
           git add "$RSS_FILE"
@@ -59,6 +83,6 @@ jobs:
       - name: Commit and Push changes
         if: env.changed == 'true'
         run: |
-          git commit -m "Update fetched HTML page and RSS feed"
+          git commit -m "Update fetched HTML pages and RSS feed"
           git push
 
