@@ -61,7 +61,7 @@ jobs:
 
           # Create RSS feed if it doesn't exist
           if [ ! -f "$RSS_FILE" ]; then
-            echo "<?xml version=\"1.0\"?><rss version=\"2.0\"><channel><title>HTML Page Updates</title><link>https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/rss.xml</link><description>Updates to tracked HTML pages</description></channel></rss>" > "$RSS_FILE"
+            echo "<?xml version=\"1.0\"?><rss version=\"2.0\"><channel><title>Page Alerts</title><link>https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/rss.xml</link><description>Updates to tracked HTML pages</description></channel></rss>" > "$RSS_FILE"
           fi
 
           # Process each changed file
