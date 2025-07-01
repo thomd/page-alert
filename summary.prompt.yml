@@ -1,6 +1,10 @@
 name: "HTML Change Summary Generator"
 description: "Generates concise summaries of HTML page changes from git diffs"
 
+model: "Phi-3-mini-4k-instruct"
+max_tokens: 50
+temperature: 0.3
+
 prompt: |
   You are a concise summarizer for web page changes. 
   
@@ -21,11 +25,5 @@ prompt: |
   Be specific about what actually changed.
   
   Git diff to summarize:
-  {diff_content}
-
-model:
-  name: "Phi-3-mini-4k-instruct"
-  max_tokens: 50
-  temperature: 0.3
 
 fallback_message: "Page content updated"
