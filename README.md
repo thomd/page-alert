@@ -24,5 +24,5 @@ urls:
 ## Files Generated
 
 - `fetched-pages/`: Directory containing downloaded HTML files
-- `rss.xml`: RSS feed with update notifications
+- `rss.xml`: RSS feed with update notifications: [thomd.github.io/page-alert/rss.xml](https://thomd.github.io/page-alert/rss.xml)
 

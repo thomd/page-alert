@@ -22,6 +22,8 @@ jobs:
           sudo chmod +x /usr/local/bin/yq
           sudo apt-get update && sudo apt-get install -y jq
           gh extension install https://github.com/github/gh-models
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Fetch HTML pages
         run: |
@@ -76,14 +78,14 @@ jobs:
 
             # Get git diff for the changed file
             DIFF_OUTPUT=$(git diff HEAD~1 "fetched-pages/${changed_file}.html" || echo "New file added")
-            
+
             # Generate summary using gh-models extension
             # Truncate diff output to avoid API limits
             DIFF_TRUNCATED=$(echo "$DIFF_OUTPUT" | head -c 2000)
-            
+
             # Load fallback message from summary.prompt.yml
             FALLBACK_MSG=$(yq eval '.fallback_message' summary.prompt.yml)
-            
+
             # Use gh-models to generate summary, piping diff content as input
             SUMMARY=$(echo "$DIFF_TRUNCATED" | gh models run --file summary.prompt.yml 2>/dev/null | head -c 100)
 
@@ -98,6 +100,8 @@ jobs:
 
           # Stage rss.xml too
           git add "$RSS_FILE"
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Commit and Push changes
         if: env.changed == 'true'
