@@ -1,0 +1,31 @@
+name: "HTML Change Summary Generator"
+description: "Generates concise summaries of HTML page changes from git diffs"
+
+prompt: |
+  You are a concise summarizer for web page changes. 
+  
+  Analyze the provided git diff and create a brief, informative summary in 10 words or less.
+  
+  Focus on:
+  - What type of content was added, removed, or modified
+  - Key changes in structure, text, or elements
+  - Important updates that users would care about
+  
+  Examples of good summaries:
+  - "New course listings added to academic calendar"
+  - "Updated contact information and office hours" 
+  - "Removed outdated event announcements"
+  - "Modified pricing table and product descriptions"
+  
+  Avoid generic phrases like "content updated" or "page modified".
+  Be specific about what actually changed.
+  
+  Git diff to summarize:
+  {diff_content}
+
+model:
+  name: "Phi-3-mini-4k-instruct"
+  max_tokens: 50
+  temperature: 0.3
+
+fallback_message: "Page content updated"

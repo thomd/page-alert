@@ -80,18 +80,28 @@ jobs:
             # Truncate diff output to avoid API limits
             DIFF_TRUNCATED=$(echo "$DIFF_OUTPUT" | head -c 2000)
             
+            # Load prompt template and model config from summary.prompt.yml
+            PROMPT_TEMPLATE=$(yq eval '.prompt' summary.prompt.yml)
+            MODEL_NAME=$(yq eval '.model.name' summary.prompt.yml)
+            MAX_TOKENS=$(yq eval '.model.max_tokens' summary.prompt.yml)
+            TEMPERATURE=$(yq eval '.model.temperature' summary.prompt.yml)
+            FALLBACK_MSG=$(yq eval '.fallback_message' summary.prompt.yml)
+            
+            # Replace placeholder in prompt with actual diff content
+            FULL_PROMPT=$(echo "$PROMPT_TEMPLATE" | sed "s/{diff_content}/$DIFF_TRUNCATED/g")
+            
             # Create JSON payload file to avoid escaping issues
             cat > /tmp/payload.json << EOF
 {
   "messages": [
     {
       "role": "user",
-      "content": "Summarize this HTML page change in 10 words or less. Focus on what content was added, removed, or modified:\n\n${DIFF_TRUNCATED}"
+      "content": "${FULL_PROMPT}"
     }
   ],
-  "model": "Phi-3-mini-4k-instruct",
-  "max_tokens": 50,
-  "temperature": 0.3
+  "model": "${MODEL_NAME}",
+  "max_tokens": ${MAX_TOKENS},
+  "temperature": ${TEMPERATURE}
 }
 EOF
             
@@ -103,12 +113,12 @@ EOF
               -H "Content-Type: application/json" \
               -d @/tmp/payload.json \
               "https://models.github.ai/inference/chat/completions" | \
-              jq -r '.choices[0].message.content // "Page content updated"' | \
+              jq -r ".choices[0].message.content // \"$FALLBACK_MSG\"" | \
               head -c 100)
 
             # Fallback if API call fails
             if [ -z "$SUMMARY" ] || [ "$SUMMARY" = "null" ]; then
-              SUMMARY="Content updated on $PAGE_NAME"
+              SUMMARY="$FALLBACK_MSG"
             fi
 
             ITEM="<item><title>${SUMMARY}</title><link>${COMMIT_URL}</link><pubDate>${COMMIT_DATE}</pubDate></item>"
