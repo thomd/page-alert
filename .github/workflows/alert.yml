@@ -16,10 +16,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install yq
+      - name: Install yq and jq
         run: |
           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
+          sudo apt-get update && sudo apt-get install -y jq
 
       - name: Fetch HTML pages
         run: |
@@ -72,8 +73,45 @@ jobs:
               PAGE_NAME=$(echo "$changed_file" | sed 's/_/ /g' | sed 's/\b\w/\U&/g')
             fi
 
-            TITLE="Page Updated: $PAGE_NAME"
-            ITEM="<item><title>${TITLE}</title><link>${COMMIT_URL}</link><pubDate>${COMMIT_DATE}</pubDate></item>"
+            # Get git diff for the changed file
+            DIFF_OUTPUT=$(git diff HEAD~1 "fetched-pages/${changed_file}.html" || echo "New file added")
+            
+            # Generate summary using GitHub Models API
+            # Truncate diff output to avoid API limits
+            DIFF_TRUNCATED=$(echo "$DIFF_OUTPUT" | head -c 2000)
+            
+            # Create JSON payload file to avoid escaping issues
+            cat > /tmp/payload.json << EOF
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Summarize this HTML page change in 10 words or less. Focus on what content was added, removed, or modified:\n\n${DIFF_TRUNCATED}"
+    }
+  ],
+  "model": "Phi-3-mini-4k-instruct",
+  "max_tokens": 50,
+  "temperature": 0.3
+}
+EOF
+            
+            SUMMARY=$(curl -s -L \
+              -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              -H "Content-Type: application/json" \
+              -d @/tmp/payload.json \
+              "https://models.github.ai/inference/chat/completions" | \
+              jq -r '.choices[0].message.content // "Page content updated"' | \
+              head -c 100)
+
+            # Fallback if API call fails
+            if [ -z "$SUMMARY" ] || [ "$SUMMARY" = "null" ]; then
+              SUMMARY="Content updated on $PAGE_NAME"
+            fi
+
+            ITEM="<item><title>${SUMMARY}</title><link>${COMMIT_URL}</link><pubDate>${COMMIT_DATE}</pubDate></item>"
             sed -i "s|</channel>|${ITEM}</channel>|" "$RSS_FILE"
           done
 
