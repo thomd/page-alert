@@ -200,7 +200,6 @@
 
         function updateFormAction(){
         var currentPath = window.location.pathname;
-        console.log(currentPath);
 
         var host = window.location.hostname;
         var port = window.location.port;
@@ -298,42 +297,9 @@
 
 <section id="page" class="page">
     <div id="scrollable-area" class="scrollableArea">
-<!--
-    <div id="chatai-popup" class="collapse">
-        <div id="chatai-popup-header">Frage ChatAI<a id="chatai-close" role="button" data-toggle="collapse" href="#chatai-popup" aria-expanded="false" aria-controls="chatai-popup"><span class="fas fa-times"></span> Schlie&szlig;en</a></div>
-        <div id="chat-messages" style="padding:10px;max-height:300px;overflow:auto;"></div>
-        <form id="chat-form" style="display:flex;gap:8px;padding:10px;border-top:1px solid #eee;">
-            <input id="chat-input" type="text" placeholder="Nachricht…" style="flex:1;padding:8px;border:1px solid #ccc;border-radius:8px;">
-            <button type="submit" style="padding:8px 12px;border-radius:8px;">Senden</button>
-        </form>
-        <p>Hier</p>
-        <p>ist</p>
-        <p>der</p>
-        <p>Chat</p>
-    </div>-->
-<!--
-    <div id="chatai-popup" class="collapse">
-    
-    <div id="chatai-popup-header">
-        Frage ChatAI
-        <a id="chatai-close" role="button" data-toggle="collapse" href="#chatai-popup" aria-expanded="false" aria-controls="chatai-popup">
-            <span class="fas fa-times"></span> Schließen
-        </a>
-    </div>
-    
-    <div id="chat-messages">
-        </div>
-    
-    <form id="chat-form">
-        <input id="chat-input" type="text" placeholder="Nachricht…" >
-        <button type="submit">Senden</button>
-    </form>
-    
-    </div> -->
-
     <header id="header-logo-container">
         <div class="container-fluid logo-container">
-            <a href="/"><img id="logo" src="/img/redesign/logo.svg" alt="Georg-August-Universit&auml;t G&ouml;ttingen"><img id="print-logo" class="hidden" src="/img/redesign/print-logo.svg" alt="Georg-August-Universit&auml;t G&ouml;ttingen"></a>
+            <a href="/de/1.html"><img id="logo" src="/img/redesign/logo.svg" alt="Georg-August-Universit&auml;t G&ouml;ttingen"><img id="print-logo" class="hidden" src="/img/redesign/print-logo.svg" alt="Georg-August-Universit&auml;t G&ouml;ttingen"></a>
 
                             <span>In publica commoda</span>
                     </div>
@@ -448,7 +414,8 @@
                                     </ol>
 
     <div class="pull-right py-4 text-uppercase">
-        <!--<a id="chatAI-button" class="hidden-xs mr-4" role="button" href="/chatai-fullpage">
+    <!--
+        <a id="chatAI-button" class="hidden-xs mr-4" role="button" href="/chatai-fullpage">
                             <span class="fas fa-brain"></span> Frage ChatAI 2
                     </a>
         <a id="chatAI-button" class="hidden-xs mr-4" role="button" data-toggle="collapse" href="#chatai-popup"
